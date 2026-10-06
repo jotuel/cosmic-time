@@ -144,7 +144,7 @@ TODOs:
       Example: Length::Shrink to Length::Fixed(10.) and/or Length::Fill to Length::Shrink
       Only fixed Length::Fixed(_) are supported currently.
 - [ ] Add `Cosmic` cargo feature for compatibility with both iced and System76's temporary fork.
-- [ ] Low motion accesability detection to disable animations.
+- [ ] Low motion accesibility detection to disable animations.
 - [ ] general animation logic tests
 - [ ] Work on web via wasm-unknown-unknown builds
 - [ ] physics based animations
@@ -153,5 +153,7 @@ TODOs:
 #### Map of iced version to required cosmic-time version.
 |Iced Version|Required Cosmic Time Version|
 |------------|----------------------------|
-|0.8| 1.2|
-|0.9| 2.0|
+|0.8| 0.1.2|
+|0.9| 0.2.0|
+|0.10| 0.4.0|
+|0.14| 0.5.0|

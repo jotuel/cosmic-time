@@ -2,14 +2,17 @@
 
 //! Utility functions for handling data in this library.
 
-use crate::reexports::iced_core::{
+use crate::reexports::iced::core::{
     layout::{Limits, Node},
     Point, Size,
 };
+use cosmic::anim::lerp;
+use cosmic::iced::core::{Background, Color};
 
 /// Collect iterator into static array without panicking or collecting into a Vec.
 ///
 /// Initializes with `T::default()`, then takes `SIZE` values from the iterator.
+#[allow(dead_code)]
 pub fn static_array_from_iter<T: Copy + Default, const SIZE: usize>(
     iter: impl Iterator<Item = T>,
 ) -> [T; SIZE] {
@@ -52,4 +55,29 @@ pub fn next_to_each_other(
         ),
         vec![left_node, right_node],
     )
+}
+
+pub fn blend_background(first: Background, other: Background, percent: f32) -> Background {
+    match (first, other) {
+        (Background::Color(c1), Background::Color(c2)) => {
+            let [r1, g1, b1, a1] = c1.into_linear();
+            let [r2, g2, b2, a2] = c2.into_linear();
+
+            let blended = Color::from_linear_rgba(
+                lerp(r1, r2, percent),
+                lerp(g1, g2, percent),
+                lerp(b1, b2, percent),
+                lerp(a1, a2, percent),
+            );
+
+            Background::Color(blended)
+        }
+        (first, other) => {
+            if percent < 0.5 {
+                first
+            } else {
+                other
+            }
+        }
+    }
 }

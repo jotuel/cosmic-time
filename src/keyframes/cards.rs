@@ -1,4 +1,4 @@
-use cosmic::iced_core::widget::Id as IcedId;
+use cosmic::iced::widget::Id as IcedId;
 use cosmic::widget::icon::Handle;
 use cosmic::Element;
 

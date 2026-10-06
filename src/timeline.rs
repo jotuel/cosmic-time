@@ -1,7 +1,7 @@
 mod imports {
+    pub use cosmic::iced::core::widget;
     pub use cosmic::iced::time::{Duration, Instant};
-    pub use cosmic::iced_core::widget;
-    pub use cosmic::iced_futures::subscription::Subscription;
+    pub use cosmic::iced::Subscription;
 }
 
 use imports::{widget, Duration, Instant, Subscription};
@@ -574,7 +574,7 @@ impl Timeline {
         if self.is_idle() {
             Subscription::none()
         } else {
-            cosmic::iced_runtime::window::frames() // ~120FPS
+            cosmic::iced::runtime::window::frames() // ~120FPS
         }
     }
 }

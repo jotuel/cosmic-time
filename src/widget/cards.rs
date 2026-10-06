@@ -1,12 +1,12 @@
 //! An expandable stack of cards
-use self::iced_core::{
-    border::Radius, event::Status, id::Id, layout::Node, renderer::Quad, widget::Tree, Element,
-    Length, Size, Vector, Widget,
+use self::core::{
+    border::Radius, id::Id, layout::Node, renderer::Quad, widget::Tree, Element, Length, Size,
+    Vector, Widget,
 };
-use cosmic::widget::style::Catalog;
+use cosmic::widget::card::style::Catalog;
 use cosmic::{
-    iced_core::{self, Border, Shadow},
-    widget::{button, card::style::Style, column, icon, icon::Handle, row, text},
+    iced::core::{self, Border, Shadow},
+    widget::{button, column, icon, icon::Handle, row, text},
 };
 use float_cmp::approx_eq;
 
@@ -55,7 +55,7 @@ where
 
 impl<'a, Message, Renderer> Cards<'a, Message, Renderer>
 where
-    Renderer: iced_core::text::Renderer,
+    Renderer: core::text::Renderer,
 {
     fn fully_expanded(&self) -> bool {
         self.expanded
@@ -74,7 +74,7 @@ where
 #[allow(missing_debug_implementations)]
 pub struct Cards<'a, Message, Renderer = cosmic::Renderer>
 where
-    Renderer: iced_core::text::Renderer,
+    Renderer: core::text::Renderer,
 {
     _id: Id,
     show_less_button: Element<'a, Message, cosmic::Theme, Renderer>,
@@ -129,7 +129,7 @@ where
                 let off_animation = chain::Cards::off(id.clone(), 1.0);
 
                 let button_content = row::with_children(show_less_children)
-                    .align_y(iced_core::Alignment::Center)
+                    .align_y(core::Alignment::Center)
                     .spacing(TOP_SPACING)
                     .width(Length::Shrink);
 
@@ -157,7 +157,7 @@ where
                             .push(w)
                             .push(text::caption(show_more_label))
                             .spacing(VERTICAL_SPACING)
-                            .align_x(iced_core::Alignment::Center)
+                            .align_x(core::Alignment::Center)
                             .into()
                     } else {
                         w
@@ -215,7 +215,7 @@ impl<'a, Message, Renderer> Widget<Message, cosmic::Theme, Renderer>
     for Cards<'a, Message, Renderer>
 where
     Message: 'a + Clone,
-    Renderer: 'a + iced_core::Renderer + iced_core::text::Renderer,
+    Renderer: 'a + core::Renderer + core::text::Renderer,
 {
     fn children(&self) -> Vec<Tree> {
         [&self.show_less_button, &self.clear_all_button]
@@ -231,11 +231,7 @@ where
             self.clear_all_button.as_widget_mut(),
         ]
         .into_iter()
-        .chain(
-            self.elements
-                .iter_mut()
-                .map(iced_core::Element::as_widget_mut),
-        )
+        .chain(self.elements.iter_mut().map(core::Element::as_widget_mut))
         .collect();
 
         tree.diff_children(children.as_mut_slice());
@@ -243,11 +239,11 @@ where
 
     #[allow(clippy::too_many_lines)]
     fn layout(
-        &self,
+        &mut self,
         tree: &mut Tree,
         renderer: &Renderer,
-        limits: &iced_core::layout::Limits,
-    ) -> iced_core::layout::Node {
+        limits: &core::layout::Limits,
+    ) -> core::layout::Node {
         let mut children = Vec::with_capacity(1 + self.elements.len());
         let mut size = Size::new(0.0, 0.0);
         let tree_children = &mut tree.children;
@@ -258,42 +254,44 @@ where
         let fully_expanded: bool = self.fully_expanded();
         let fully_unexpanded: bool = self.fully_unexpanded();
 
-        let show_less = &self.show_less_button;
-        let clear_all = &self.clear_all_button;
+        let show_less = &mut self.show_less_button;
+        let clear_all = &mut self.clear_all_button;
 
         let show_less_node = if self.can_show_more {
             show_less
-                .as_widget()
+                .as_widget_mut()
                 .layout(&mut tree_children[0], renderer, limits)
         } else {
             Node::new(Size::default())
         };
-        let clear_all_node = clear_all
-            .as_widget()
-            .layout(&mut tree_children[1], renderer, limits);
+        let clear_all_node =
+            clear_all
+                .as_widget_mut()
+                .layout(&mut tree_children[1], renderer, limits);
         size.width += show_less_node.size().width + clear_all_node.size().width;
 
         let custom_limits = limits.min_width(size.width);
-        for (c, t) in self.elements.iter().zip(tree_children[2..].iter_mut()) {
-            let card_node = c.as_widget().layout(t, renderer, &custom_limits);
+        for (c, t) in self.elements.iter_mut().zip(tree_children[2..].iter_mut()) {
+            let card_node = c.as_widget_mut().layout(t, renderer, &custom_limits);
             size.width = size.width.max(card_node.size().width);
         }
 
         if fully_expanded {
-            let show_less = &self.show_less_button;
-            let clear_all = &self.clear_all_button;
+            let show_less = &mut self.show_less_button;
+            let clear_all = &mut self.clear_all_button;
 
             let show_less_node = if self.can_show_more {
                 show_less
-                    .as_widget()
+                    .as_widget_mut()
                     .layout(&mut tree_children[0], renderer, limits)
             } else {
                 Node::new(Size::default())
             };
             let clear_all_node = if self.can_show_more {
-                let mut n = clear_all
-                    .as_widget()
-                    .layout(&mut tree_children[1], renderer, limits);
+                let mut n =
+                    clear_all
+                        .as_widget_mut()
+                        .layout(&mut tree_children[1], renderer, limits);
                 let clear_all_node_size = n.size();
                 n = clear_all_node
                     .translate(Vector::new(size.width - clear_all_node_size.width, 0.0));
@@ -312,15 +310,16 @@ where
             .max_width(size.width)
             .width(Length::Fixed(size.width));
 
+        let len = self.elements.len();
         for (i, (c, t)) in self
             .elements
-            .iter()
+            .iter_mut()
             .zip(tree_children[2..].iter_mut())
             .enumerate()
         {
             let progress = self.percent * size.height;
             let card_node = c
-                .as_widget()
+                .as_widget_mut()
                 .layout(t, renderer, &custom_limits)
                 .translate(Vector::new(0.0, progress));
 
@@ -332,7 +331,7 @@ where
                 let width = children.last().unwrap().bounds().width;
 
                 // push the background card nodes
-                for i in 1..self.elements.len().min(3) {
+                for i in 1..len.min(3) {
                     // height must be 16px for 8px padding
                     // but we only want 4px visible
 
@@ -349,7 +348,7 @@ where
                 break;
             }
 
-            if i + 1 < self.elements.len() {
+            if i + 1 < len {
                 size.height += VERTICAL_SPACING;
             }
         }
@@ -359,13 +358,13 @@ where
 
     fn draw(
         &self,
-        state: &iced_core::widget::Tree,
+        state: &core::widget::Tree,
         renderer: &mut Renderer,
         theme: &cosmic::Theme,
-        style: &iced_core::renderer::Style,
-        layout: iced_core::Layout<'_>,
-        cursor: iced_core::mouse::Cursor,
-        viewport: &iced_core::Rectangle,
+        style: &core::renderer::Style,
+        layout: core::Layout<'_>,
+        cursor: core::mouse::Cursor,
+        viewport: &core::Rectangle,
     ) {
         // there are 4 cases for drawing
         // 1. empty entries list
@@ -438,6 +437,7 @@ where
                             ..Default::default()
                         },
                         shadow: Shadow::default(),
+                        snap: false,
                     },
                     if i == 0 {
                         appearance.card_1
@@ -472,21 +472,19 @@ where
         }
     }
 
-    fn on_event(
+    fn update(
         &mut self,
         state: &mut Tree,
-        event: iced_core::Event,
-        layout: iced_core::Layout<'_>,
-        cursor: iced_core::mouse::Cursor,
+        event: &core::Event,
+        layout: core::Layout<'_>,
+        cursor: core::mouse::Cursor,
         renderer: &Renderer,
-        clipboard: &mut dyn iced_core::Clipboard,
-        shell: &mut iced_core::Shell<'_, Message>,
-        viewport: &iced_core::Rectangle,
-    ) -> iced_core::event::Status {
-        let mut status = iced_core::event::Status::Ignored;
-
+        clipboard: &mut dyn core::Clipboard,
+        shell: &mut core::Shell<'_, Message>,
+        viewport: &core::Rectangle,
+    ) {
         if self.elements.is_empty() {
-            return status;
+            return;
         }
 
         let mut layout = layout.children();
@@ -499,56 +497,33 @@ where
         if fully_expanded {
             let c_layout = layout.next().unwrap();
             let state = show_less_state.unwrap();
-            status = status.merge(self.show_less_button.as_widget_mut().on_event(
-                state,
-                event.clone(),
-                c_layout,
-                cursor,
-                renderer,
-                clipboard,
-                shell,
-                viewport,
-            ));
+            self.show_less_button.as_widget_mut().update(
+                state, &event, c_layout, cursor, renderer, clipboard, shell, viewport,
+            );
 
-            if status == Status::Captured {
-                return status;
+            if shell.is_event_captured() {
+                return;
             }
 
             let c_layout = layout.next().unwrap();
             let state = clear_all_state.unwrap();
-            status = status.merge(self.clear_all_button.as_widget_mut().on_event(
-                state,
-                event.clone(),
-                c_layout,
-                cursor,
-                renderer,
-                clipboard,
-                shell,
-                viewport,
-            ));
+            self.clear_all_button.as_widget_mut().update(
+                state, &event, c_layout, cursor, renderer, clipboard, shell, viewport,
+            );
         }
 
-        if status == Status::Captured {
-            return status;
+        if shell.is_event_captured() {
+            return;
         }
 
         for ((inner, layout), c_state) in self.elements.iter_mut().zip(layout).zip(tree_children) {
-            status = status.merge(inner.as_widget_mut().on_event(
-                c_state,
-                event.clone(),
-                layout,
-                cursor,
-                renderer,
-                clipboard,
-                shell,
-                viewport,
-            ));
-            if status == Status::Captured || fully_unexpanded {
+            inner.as_widget_mut().update(
+                c_state, &event, layout, cursor, renderer, clipboard, shell, viewport,
+            );
+            if shell.is_event_captured() || fully_unexpanded {
                 break;
             }
         }
-
-        status
     }
 
     fn size(&self) -> Size<Length> {

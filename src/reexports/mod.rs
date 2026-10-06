@@ -2,5 +2,7 @@
 
 mod libcosmic;
 pub use self::libcosmic::{
-    iced, iced_core, iced_futures, iced_runtime, iced_widget, ButtonStyleSheet, Theme,
+    iced,
+    iced::{core, futures, runtime, widget},
+    ButtonStyleSheet, Theme,
 };
